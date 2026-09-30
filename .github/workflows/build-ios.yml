@@ -18,6 +18,17 @@ jobs:
       with:
         xcode-version: 'latest'
 
+    - name: Find Project File
+      id: find_proj
+      run: |
+        PROJ=$(find . -maxdepth 3 -name "*.xcodeproj" | head -n 1)
+        if [ -z "$PROJ" ]; then
+          echo "No .xcodeproj file found!"
+          exit 1
+        fi
+        echo "Found project at: $PROJ"
+        echo "path=$PROJ" >> $GITHUB_OUTPUT
+
     - name: Create Basic ExportOptions.plist
       run: |
         cat <<EOF > ExportOptions.plist
@@ -35,7 +46,7 @@ jobs:
 
     - name: Build Archive
       run: |
-        xcodebuild -project Madeira.xcodeproj \
+        xcodebuild -project "${{ steps.find_proj.outputs.path }}" \
                    -scheme Madeira \
                    -sdk iphoneos \
                    -configuration Release \
