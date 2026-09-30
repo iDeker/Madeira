@@ -51,6 +51,10 @@ jobs:
                    CODE_SIGN_IDENTITY="-" \
                    AD_HOC_CODE_SIGNING_ALLOWED=YES \
                    COMPILER_INDEX_STORE_ENABLE=NO \
+                   CLANG_ENABLE_MODULES=YES \
+                   SWIFT_ENABLE_EXPLICIT_MODULES=NO \
+                   CLANG_ENABLE_EXPLICIT_MODULES=NO \
+                   GCC_WARN_INHIBIT_ALL_WARNINGS=YES \
                    build
 
     - name: Create IPA Package
