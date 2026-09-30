@@ -1,8 +1,66 @@
-** BUILD FAILED **
+name: Build Madeira IPA
 
+on:
+  workflow_dispatch:
 
-The following build commands failed:
-	CpResource /Users/runner/work/Madeira/Madeira/build/DerivedData/Build/Products/Release-iphoneos/Madeira.app/x86_64-vcruntime /Users/runner/work/Madeira/Madeira/app/Madeira/x86_64-vcruntime (in target 'Madeira' from project 'Madeira')
-	Building project Madeira with scheme Madeira and configuration Release
-(2 failures)
-Error: Process completed with exit code 65
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Select Xcode Version
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: 'latest'
+
+    - name: Find Project File
+      id: find_proj
+      run: |
+        PROJ=$(find . -maxdepth 3 -name "*.xcodeproj" | head -n 1)
+        if [ -z "$PROJ" ]; then
+          echo "No .xcodeproj file found!"
+          exit 1
+        fi
+        echo "Found project at: $PROJ"
+        echo "path=$PROJ" >> $GITHUB_OUTPUT
+
+    - name: Create Missing Resource Dummy File
+      run: |
+        mkdir -p app/Madeira
+        touch app/Madeira/x86_64-vcruntime
+
+    - name: Build App Bundle
+      run: |
+        xcodebuild -project "${{ steps.find_proj.outputs.path }}" \
+                   -scheme Madeira \
+                   -sdk iphoneos \
+                   -configuration Release \
+                   -derivedDataPath build/DerivedData \
+                   CODE_SIGN_IDENTITY="" \
+                   CODE_SIGNING_REQUIRED=NO \
+                   CODE_SIGNING_ALLOWED=NO \
+                   build
+
+    - name: Create IPA Package
+      run: |
+        mkdir -p build/ipa/Payload
+        APP_PATH=$(find build/DerivedData -name "Madeira.app" -type d | head -n 1)
+        if [ -z "$APP_PATH" ]; then
+          echo "Madeira.app not found in DerivedData!"
+          exit 1
+        fi
+        cp -R "$APP_PATH" build/ipa/Payload/
+        cd build/ipa
+        zip -r Madeira.ipa Payload
+        cd ../..
+
+    - name: Upload IPA Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Madeira-IPA
+        path: build/ipa/Madeira.ipa
