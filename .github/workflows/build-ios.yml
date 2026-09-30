@@ -29,42 +29,33 @@ jobs:
         echo "Found project at: $PROJ"
         echo "path=$PROJ" >> $GITHUB_OUTPUT
 
-    - name: Create Basic ExportOptions.plist
-      run: |
-        cat <<EOF > ExportOptions.plist
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-            <key>method</key>
-            <string>development</string>
-            <key>compileBitcode</key>
-            <false/>
-        </dict>
-        </plist>
-        EOF
-
-    - name: Build Archive
+    - name: Build App Bundle
       run: |
         xcodebuild -project "${{ steps.find_proj.outputs.path }}" \
                    -scheme Madeira \
                    -sdk iphoneos \
                    -configuration Release \
-                   -archivePath $PWD/build/Madeira.xcarchive \
-                   CODE_SIGNING_ALLOWED=NO \
+                   -derivedDataPath build/DerivedData \
+                   CODE_SIGN_IDENTITY="" \
                    CODE_SIGNING_REQUIRED=NO \
-                   archive
+                   CODE_SIGNING_ALLOWED=NO \
+                   build
 
-    - name: Export IPA
+    - name: Create IPA Package
       run: |
-        xcodebuild -exportArchive \
-                   -archivePath $PWD/build/Madeira.xcarchive \
-                   -exportOptionsPlist ExportOptions.plist \
-                   -exportPath $PWD/build/ipa \
-                   CODE_SIGNING_ALLOWED=NO
+        mkdir -p build/ipa/Payload
+        APP_PATH=$(find build/DerivedData -name "Madeira.app" -type d | head -n 1)
+        if [ -z "$APP_PATH" ]; then
+          echo "Madeira.app not found in DerivedData!"
+          exit 1
+        fi
+        cp -R "$APP_PATH" build/ipa/Payload/
+        cd build/ipa
+        zip -r Madeira.ipa Payload
+        cd ../..
 
     - name: Upload IPA Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Madeira-IPA
-        path: build/ipa/*.ipa
+        path: build/ipa/Madeira.ipa
