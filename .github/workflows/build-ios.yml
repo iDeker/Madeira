@@ -35,10 +35,6 @@ jobs:
         mkdir -p app/Madeira
         touch app/Madeira/x86_64-vcruntime
 
-    - name: Bypass Signing Script Errors
-      run: |
-        find . -type f \( -name "*.sh" -o -name "pbxproj" -o -name "*.pbxproj" \) -exec sed -i '' 's/codesign --force --deep/echo "Skipping codesign"/g' {} + || true
-
     - name: Build App Bundle
       run: |
         xcodebuild -project "${{ steps.find_proj.outputs.path }}" \
@@ -46,12 +42,11 @@ jobs:
                    -sdk iphoneos \
                    -configuration Release \
                    -derivedDataPath build/DerivedData \
-                   CODE_SIGN_IDENTITY="" \
+                   CODE_SIGNING_ALLOWED=YES \
                    CODE_SIGNING_REQUIRED=NO \
-                   CODE_SIGNING_ALLOWED=NO \
-                   EXPANDED_CODE_SIGN_IDENTITY="" \
-                   CLANG_CXX_LANGUAGE_STANDARD="c++20" \
-                   GCC_WARN_INHIBIT_ALL_WARNINGS=YES \
+                   CODE_SIGN_IDENTITY="-" \
+                   AD_HOC_CODE_SIGNING_ALLOWED=YES \
+                   COMPILER_INDEX_STORE_ENABLE=NO \
                    build
 
     - name: Create IPA Package
