@@ -11,7 +11,8 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
       with:
-        submodules: recursive
+        submodules: 'recursive'
+        fetch-depth: 0
 
     - name: Select Xcode Version
       uses: maxim-lobanov/setup-xcode@v1
@@ -29,14 +30,13 @@ jobs:
         echo "Found project at: $PROJ"
         echo "path=$PROJ" >> $GITHUB_OUTPUT
 
-    - name: Create Missing Resource Dummy File
+    - name: Create Missing Resource Dummy Files
       run: |
         mkdir -p app/Madeira
         touch app/Madeira/x86_64-vcruntime
 
     - name: Bypass Signing Script Errors
       run: |
-        # Replace codesign commands inside project files or scripts with true (success)
         find . -type f \( -name "*.sh" -o -name "pbxproj" -o -name "*.pbxproj" \) -exec sed -i '' 's/codesign --force --deep/echo "Skipping codesign"/g' {} + || true
 
     - name: Build App Bundle
@@ -50,6 +50,8 @@ jobs:
                    CODE_SIGNING_REQUIRED=NO \
                    CODE_SIGNING_ALLOWED=NO \
                    EXPANDED_CODE_SIGN_IDENTITY="" \
+                   COMPILER_INDEX_STORE_ENABLE=NO \
+                   GCC_WARN_INHIBIT_ALL_WARNINGS=YES \
                    build
 
     - name: Create IPA Package
